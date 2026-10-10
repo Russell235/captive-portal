@@ -48,7 +48,7 @@ export default function AnnouncementsPage() {
 
   useEffect(() => {
     void fetchAnnouncements();
-  }, [fetchAnnouncements]);
+  }, []);
 
   const visible = items.filter((item) => {
     const status = item.published ? "Published" : "Draft";

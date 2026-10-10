@@ -36,7 +36,7 @@ export default function SessionsPage() {
     }
 
     fetchSessions();
-  });
+  },[]);
   
   const filtered = sessions.filter(
     (s) =>
@@ -66,13 +66,24 @@ export default function SessionsPage() {
     return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
   })();
 
-  const terminate = (id) => {
-    // setSessions((current) => current.filter((s) => s.id !== id));
-    console.log(id)
-    toast({
-      title: "Session terminated",
-      description: "The student connection has been safely closed.",
-    });
+    const terminate = async (id) => {
+    try {
+      await adminService.terminateSession(id);
+      // Recharger les sessions
+      const result = await adminService.listSessions();
+      setSessions(result);
+      toast({
+        title: "Session terminated",
+        description: "The student connection has been safely closed.",
+      });
+    } catch (error) {
+      console.error("Error terminating session:", error);
+      toast({
+        title: "Error",
+        description: "Unable to terminate the session.",
+        variant: "destructive",
+      });
+    }
   };
   return (
     <Shell

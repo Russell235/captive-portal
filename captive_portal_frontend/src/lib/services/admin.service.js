@@ -386,6 +386,14 @@ const adminService = {
       throw error.response?.data || error.message;
     }
   },
-};
 
+ async terminateSession(id) {
+    try {
+        const { data } = await apiClient().put(`/admin/sessions/${id}/terminate`);
+        return data;
+    } catch (error) {
+        throw error.response?.data || error.message;
+    }
+},
+};
 export default adminService;

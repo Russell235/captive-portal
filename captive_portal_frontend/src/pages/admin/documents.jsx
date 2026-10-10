@@ -33,9 +33,10 @@ export default function DocumentsPage() {
     }
   }, [toast]);
 
-  useEffect(() => {
+    useEffect(() => {
     void fetchDocuments();
-  }, [fetchDocuments]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const visible = items.filter(
     (d) =>

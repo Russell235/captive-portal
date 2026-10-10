@@ -109,7 +109,15 @@ async function studentLogin(req, res) {
         try {
             let deviceId = null;
 
-            if (clientMac) {
+                        if (clientMac) {
+                // Fermer les autres devices de cet élève
+                await pool.query(
+                    `UPDATE devices 
+                     SET status = 'offline'
+                     WHERE student_id = $1 AND mac_address != $2 AND status = 'online'`,
+                    [student.id, clientMac]
+                );
+
                 const deviceResult = await pool.query(
                     `INSERT INTO devices (student_id, mac_address, ip_address, is_authorized, status, last_seen_at, created_at)
                      VALUES ($1, $2, $3, TRUE, 'online', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
@@ -126,17 +134,27 @@ async function studentLogin(req, res) {
                 console.log(`[DEVICE] Device ${deviceId} (${clientMac}) upserted`);
             }
 
+                        // Fermer les anciennes sessions actives de cet élève
+            const closeResult = await pool.query(
+                `UPDATE network_sessions 
+                 SET status = 'ended', ended_at = CURRENT_TIMESTAMP
+                 WHERE student_id = $1 AND status = 'active'`,
+                [student.id]
+            );
+            console.log(`[SESSION] Closed ${closeResult.rowCount} previous active session(s) for student ${student.id}`);
+
+            // Créer la nouvelle session
             await pool.query(
                 `INSERT INTO network_sessions (student_id, device_id, ip_address, mac_address, status, started_at)
                  VALUES ($1, $2, $3, $4, 'active', CURRENT_TIMESTAMP)`,
                 [student.id, deviceId, clientIp, clientMac]
             );
-            console.log(`[SESSION] Created for student ${student.id} (${clientIp})`);
-
+                        console.log(`[SESSION] Created new session for student ${student.id} (${clientIp})`);
         } catch (err) {
             console.error("[SESSION] Failed:", err.message);
         }
 
+        
         // 6. Appliquer la limitation de bande passante
         try {
             const { download, upload } = await getEffectiveBandwidth(student.id);

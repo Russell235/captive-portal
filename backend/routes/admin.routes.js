@@ -970,4 +970,5 @@ router.get("/exam-sessions/options", exam.getExamOptions);
 router.post("/exam-sessions", exam.createExamSession);
 router.put("/exam-sessions/:id", exam.updateExamSession);
 router.delete("/exam-sessions/:id", exam.deleteExamSession);
+router.put("/sessions/:id/terminate", admin.terminateSession);
 module.exports = router;

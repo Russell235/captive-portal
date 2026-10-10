@@ -56,7 +56,7 @@ export default function TicketsPage() {
     return () => {
       isLive = false;
     };
-  }, [toast]);
+  }, []);
 
   const visible = tickets.filter(
     (t) =>

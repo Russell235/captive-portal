@@ -153,21 +153,30 @@ async function updateStudent(req, res) {
 }
 
 async function deleteStudent(req, res) {
-  try {
-    await pool.query(`DELETE FROM students WHERE id = $1`, [req.params.id]);
-    await logAction(
-      req.user.id,
-      "DELETE_STUDENT",
-      `Deleted student ID ${req.params.id}`,
-      req.ip,
-    );
-    res.json({ success: true });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Server error" });
-  }
-}
+    try {
+        // Fermer les sessions actives de cet élève
+        await pool.query(
+            `UPDATE network_sessions
+             SET status = 'ended', ended_at = CURRENT_TIMESTAMP
+             WHERE student_id = $1 AND status = 'active'`,
+            [req.params.id]
+        );
 
+        //  supprimer l'élève
+        await pool.query(`DELETE FROM students WHERE id = $1`, [req.params.id]);
+
+        await logAction(
+            req.user.id,
+            "DELETE_STUDENT",
+            `Deleted student ID ${req.params.id}`,
+            req.ip
+        );
+        res.json({ success: true });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Server error" });
+    }
+}
 async function listSessions(req, res) {
   try {
     const result = await pool.query(
@@ -176,6 +185,7 @@ async function listSessions(req, res) {
              FROM network_sessions ns
              LEFT JOIN students s ON s.id = ns.student_id
              LEFT JOIN devices d ON d.id = ns.device_id
+             WHERE ns.status = 'active'
              ORDER BY ns.started_at DESC LIMIT 500`,
     );
     res.json(result.rows);
@@ -827,7 +837,67 @@ async function updateSetting(req, res) {
     res.status(500).json({ message: "Server error" });
   }
 }
-
+async function terminateSession(req, res) {
+    try {
+        const sessionId = req.params.id;
+        
+        // Récupérer la session pour avoir le MAC
+        const sessionResult = await pool.query(
+            `SELECT id, mac_address, student_id, status FROM network_sessions WHERE id = $1`,
+            [sessionId]
+        );
+        
+        if (sessionResult.rows.length === 0) {
+            return res.status(404).json({ message: "Session not found" });
+        }
+        
+        const session = sessionResult.rows[0];
+        
+        // Fermer la session en base
+        await pool.query(
+            `UPDATE network_sessions 
+             SET status = 'ended', ended_at = CURRENT_TIMESTAMP
+             WHERE id = $1`,
+            [sessionId]
+        );
+        
+        // Fermer le device associé
+        if (session.mac_address) {
+            await pool.query(
+                `UPDATE devices 
+                 SET status = 'offline'
+                 WHERE mac_address = $1`,
+                [session.mac_address]
+            );
+        }
+        
+        // Déconnecter le client d'openNDS
+        if (session.mac_address) {
+            try {
+                const { exec } = require("child_process");
+                const { promisify } = require("util");
+                const execAsync = promisify(exec);
+                await execAsync(`sudo ndsctl deauth ${session.mac_address}`);
+                console.log(`[TERMINATE] Client ${session.mac_address} deauthenticated`);
+            } catch (err) {
+                console.error("[TERMINATE] openNDS deauth failed:", err.message);
+            }
+        }
+        
+        // Logger l'action
+        await logAction(
+            req.user.id,
+            "TERMINATE_SESSION",
+            `Terminated session ID ${sessionId}`,
+            req.ip
+        );
+        
+        res.json({ success: true, message: "Session terminated" });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Server error" });
+    }
+}
 module.exports = {
   listStudents,
   getStudent,
@@ -866,4 +936,5 @@ module.exports = {
   listLogs,
   getSettings,
   updateSetting,
+  terminateSession,
 };

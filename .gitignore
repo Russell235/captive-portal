@@ -55,3 +55,21 @@ backend/.env.backup-pc
 backend/.env.*
 backend/config/school.db
 backend/*.db
+
+# Backups et fichiers temporaires
+*.bak
+*.bak-*
+*.bak2
+*.bak3
+*.bak4
+*.bak-sessions
+*~
+*.tmp
+*.log
+
+# Fichiers vides ou temporaires
+backend/admin.controller.js
+backend/admin.services.js
+backend/controllers/admin.service.js
+backend/controllers/admin.services.js
+backend/routes/admin.services.js

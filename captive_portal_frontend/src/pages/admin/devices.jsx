@@ -40,19 +40,19 @@ export default function DevicesPage() {
           },
           {
             label: "Online",
-            value: `${devices.filter((d) => d.status === "Online").length}`,
+            value: `${devices.filter((d) => d.status === "online").length}`,
             helper: "Healthy connections",
             icon: CheckCircle2,
           },
           {
             label: "Warning",
-            value: `${devices.filter((d) => d.status === "Warning").length}`,
+            value: `${devices.filter((d) => d.status === "warning").length}`,
             helper: "Needs attention",
             icon: AlertTriangle,
           },
           {
             label: "Offline",
-            value: `${devices.filter((d) => d.status === "Offline").length}`,
+            value: `${devices.filter((d) => d.status === "offline").length}`,
             helper: "Requires action",
             icon: XCircle,
           },
@@ -93,7 +93,7 @@ export default function DevicesPage() {
               <CardContent className="space-y-4">
                 <div className="flex items-center gap-2 text-sm">
                   <div
-                    className={`w-2 h-2 rounded-full ${d.status === "Online" ? "bg-emerald-500 animate-pulse" : d.status === "Warning" ? "bg-amber-500" : "bg-rose-500"}`}
+                    className={`w-2 h-2 rounded-full ${d.status === "online" ? "bg-emerald-500 animate-pulse" : d.status === "warning" ? "bg-amber-500" : "bg-rose-500"}`}
                   />
                   <span className="font-mono text-muted-foreground">
                     {d.ip_address}
